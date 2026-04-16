@@ -1,6 +1,13 @@
-import type { TransposeResult, SongLine, ChordPosition } from './types';
+﻿import type { TransposeResult, SongLine, ChordPosition } from './types';
 
-const CHORD_REGEX = /^[A-G][b#]?(m|maj|min|dim|aug|sus|add)?[0-9]*(\/[A-G][b#]?)?$/;
+// Supports English (A-G) and French solfege (Do Re Mi Fa Sol La Si)
+const FR_NOTES = 'Do|R\u00e9|Re|Mi|Fa|Sol|La|Si';
+const EN_NOTES = '[A-G]';
+const NOTE_PAT = '(?:' + FR_NOTES + '|' + EN_NOTES + ')';
+
+const CHORD_REGEX = new RegExp(
+  '^' + NOTE_PAT + '[b#]?(m|maj|min|dim|aug|sus|add)?[0-9]*(\\/(' + NOTE_PAT + ')[b#]?)?$'
+);
 
 function isChordLine(line: string): boolean {
   const tokens = line.trim().split(/\s+/);
@@ -10,7 +17,8 @@ function isChordLine(line: string): boolean {
 
 function parseChordproLine(line: string): SongLine {
   const chords: ChordPosition[] = [];
-  const lyrics = line.replace(/\[([A-G][^\]]*)\](\S*)/g, (_, chord, word) => {
+  const cpRegex = new RegExp('\\[(' + NOTE_PAT + '[^\\]]*)](\\S*)', 'g');
+  const lyrics = line.replace(cpRegex, (_: string, chord: string, word: string) => {
     chords.push({ word: word || '', chord });
     return word;
   });
@@ -19,7 +27,8 @@ function parseChordproLine(line: string): SongLine {
 
 function parseChordAboveLyrics(chordLine: string, lyricLine: string): SongLine {
   const chords: ChordPosition[] = [];
-  const chordMatches = [...chordLine.matchAll(/([A-G][b#]?[^\s]*)\s*/g)];
+  const chordMatchRegex = new RegExp(NOTE_PAT + '[b#]?[^\\s]*\\s*', 'g');
+  const chordMatches = [...chordLine.matchAll(chordMatchRegex)];
   const lyricWords = lyricLine.split(/\s+/);
 
   for (const match of chordMatches) {
@@ -30,7 +39,7 @@ function parseChordAboveLyrics(chordLine: string, lyricLine: string): SongLine {
       if (pos <= charPos) bestWord = word;
       pos += word.length + 1;
     }
-    chords.push({ word: bestWord, chord: match[1] });
+    chords.push({ word: bestWord, chord: match[0].trim() });
   }
 
   return { lyrics: lyricLine, chords };
@@ -39,17 +48,18 @@ function parseChordAboveLyrics(chordLine: string, lyricLine: string): SongLine {
 export function parseRawText(text: string): TransposeResult {
   if (!text.trim()) return { lines: [] };
 
-  const hasChordpro = /\[[A-G][^\]]*\]/.test(text);
+  const chordproDetect = new RegExp('\\[' + NOTE_PAT + '[^\\]]*\\]');
+  const hasChordpro = chordproDetect.test(text);
 
   if (hasChordpro) {
     const lines: SongLine[] = text
-      .split('\n')
+      .split(/\n/)
       .filter(l => l.trim())
       .map(parseChordproLine);
     return { lines };
   }
 
-  const rawLines = text.split('\n');
+  const rawLines = text.split(/\n/);
   const lines: SongLine[] = [];
   let i = 0;
 

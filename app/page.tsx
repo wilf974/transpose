@@ -40,7 +40,13 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, toKey }),
       });
-      const data = await res.json() as TransposeResult & { error?: string };
+      const raw = await res.text();
+      let data: TransposeResult & { error?: string };
+      try {
+        data = JSON.parse(raw) as TransposeResult & { error?: string };
+      } catch {
+        throw new Error(`Réponse invalide du serveur (${res.status}): ${raw.slice(0, 200)}`);
+      }
       if (!res.ok) throw new Error(data.error ?? 'Erreur de transposition');
       setResult(data);
     } catch (err) {

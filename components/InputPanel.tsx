@@ -12,11 +12,13 @@ export default function InputPanel({ onTextReady }: InputPanelProps) {
   const [textValue, setTextValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pdfFileName, setPdfFileName] = useState('');
+  const [pdfCharCount, setPdfCharCount] = useState(0);
 
   const tabs: { id: InputMode; label: string }[] = [
-    { id: 'text', label: '✏️ Texte' },
-    { id: 'txt', label: '📄 TXT' },
-    { id: 'pdf', label: '📑 PDF' },
+    { id: 'text', label: 'Texte' },
+    { id: 'txt', label: 'TXT' },
+    { id: 'pdf', label: 'PDF' },
   ];
 
   function handleTextChange(e: ChangeEvent<HTMLTextAreaElement>) {
@@ -36,13 +38,18 @@ export default function InputPanel({ onTextReady }: InputPanelProps) {
     if (!file) return;
     setLoading(true);
     setError('');
+    setPdfFileName('');
+    setPdfCharCount(0);
     try {
       const formData = new FormData();
       formData.append('file', file);
       const res = await fetch('/api/extract', { method: 'POST', body: formData });
       const data = await res.json() as { text?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Extraction échouée');
-      onTextReady(data.text ?? '');
+      const extracted = data.text ?? '';
+      onTextReady(extracted);
+      setPdfFileName(file.name);
+      setPdfCharCount(extracted.length);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inattendue');
     } finally {
@@ -58,11 +65,11 @@ export default function InputPanel({ onTextReady }: InputPanelProps) {
           <button
             key={tab.id}
             onClick={() => setMode(tab.id)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
+            className={
               mode === tab.id
-                ? 'border-b-2 border-violet-500 text-violet-400'
-                : 'text-zinc-400 hover:text-white'
-            }`}
+                ? 'px-4 py-2 text-sm font-medium border-b-2 border-violet-500 text-violet-400'
+                : 'px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white'
+            }
           >
             {tab.label}
           </button>
@@ -73,7 +80,7 @@ export default function InputPanel({ onTextReady }: InputPanelProps) {
         <textarea
           value={textValue}
           onChange={handleTextChange}
-          placeholder={"Collez vos accords et paroles ici…\n\nExemple chordpro : [Am]Amazing [G]grace\nOu accords au-dessus : Am  G\n                      Amazing grace"}
+          placeholder={"Collez vos accords et paroles ici\n\nExemple chordpro : [Am]Amazing [G]grace\nOu accords au-dessus : Am  G\n                      Amazing grace"}
           className="w-full h-48 bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-sm text-white placeholder-zinc-500 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500 font-mono"
         />
       )}
@@ -94,6 +101,20 @@ export default function InputPanel({ onTextReady }: InputPanelProps) {
         <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-zinc-700 rounded-lg gap-2">
           {loading ? (
             <p className="text-zinc-400 text-sm animate-pulse">Extraction en cours…</p>
+          ) : pdfFileName ? (
+            <>
+              <p className="text-green-400 text-sm font-medium">✓ {pdfFileName}</p>
+              <p className="text-zinc-500 text-xs">{pdfCharCount} caractères extraits</p>
+              <label className="text-xs text-violet-400 underline cursor-pointer">
+                Changer de fichier
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handlePdfUpload}
+                  className="hidden"
+                />
+              </label>
+            </>
           ) : (
             <>
               <p className="text-zinc-400 text-sm">Sélectionnez un fichier .pdf</p>
