@@ -7,6 +7,15 @@ const config: Config = {
     '^@/(.*)$': '<rootDir>/$1',
   },
   testPathPattern: '__tests__',
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', {
+      tsconfig: {
+        module: 'commonjs',
+        esModuleInterop: false,
+        allowSyntheticDefaultImports: true,
+      },
+    }],
+  },
 };
 
 export default config;
