@@ -31,7 +31,7 @@ describe('transposeSong', () => {
   });
 
   it('returns a TransposeResult with lines', async () => {
-    const result = await transposeSong('Amazing grace', 'D', 'C');
+    const result = await transposeSong('Amazing grace', 'C');
     expect(result.lines).toHaveLength(1);
     expect(result.lines[0].lyrics).toBe('Amazing grace');
     expect(result.lines[0].chords[0].chord).toBe('Am');
@@ -41,6 +41,6 @@ describe('transposeSong', () => {
     mockCreate.mockResolvedValueOnce({
       choices: [{ message: { content: null } }]
     });
-    await expect(transposeSong('test', 'D', 'C')).rejects.toThrow('OpenAI returned empty response');
+    await expect(transposeSong('test', 'C')).rejects.toThrow('OpenAI returned empty response');
   });
 });

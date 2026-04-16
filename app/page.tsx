@@ -6,10 +6,10 @@ import KeySelector from '@/components/KeySelector';
 import SongPreview from '@/components/SongPreview';
 import ExportBar from '@/components/ExportBar';
 import type { TransposeResult, MusicalKey } from '@/lib/types';
+// fromKey supprimé — OpenAI détecte automatiquement la tonalité source
 
 export default function Home() {
   const [text, setText] = useState('');
-  const [fromKey, setFromKey] = useState<MusicalKey>('D');
   const [toKey, setToKey] = useState<MusicalKey>('C');
   const [result, setResult] = useState<TransposeResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,7 +38,7 @@ export default function Home() {
       const res = await fetch('/api/transpose', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, fromKey, toKey }),
+        body: JSON.stringify({ text, toKey }),
       });
       const data = await res.json() as TransposeResult & { error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Erreur de transposition');
@@ -68,9 +68,7 @@ export default function Home() {
         {/* Keys + Transpose button */}
         <section className="bg-zinc-900 rounded-2xl p-4">
           <KeySelector
-            fromKey={fromKey}
             toKey={toKey}
-            onFromChange={setFromKey}
             onToChange={setToKey}
             onTranspose={handleTranspose}
             loading={loading}
